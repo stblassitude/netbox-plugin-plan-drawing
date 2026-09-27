@@ -1,0 +1,131 @@
+{% extends 'generic/object.html' %}
+{% load helpers %}
+{% load i18n %}
+{% load static %}
+{% load plan_drawing %}
+
+{% block head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% versioned_static 'netbox_plugin_plan_drawing/plan-drawing.css' %}">
+{% endblock %}
+
+{% block extra_controls %}
+  {% if perms.netbox_plugin_plan_drawing.change_plandrawing %}
+    <a href="{% url 'plugins:netbox_plugin_plan_drawing:plandrawing_draw' pk=object.pk %}" class="btn btn-primary">
+      <i class="mdi mdi-draw"></i> {% trans "Edit Drawing" %}
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block content %}
+  <div class="row mb-3">
+    <div class="col col-12 col-xl-9">
+      <div class="card">
+        {% if object.content %}
+          <div class="card-header d-flex flex-wrap align-items-center gap-2 py-2">
+            <div id="plan-drawing-page-group" class="d-flex align-items-center gap-2" hidden>
+              <label for="plan-drawing-page" class="mb-0">{% trans "Page" %}</label>
+              <select id="plan-drawing-page" class="form-select form-select-sm w-auto no-ts"></select>
+            </div>
+            <div class="btn-group btn-group-sm ms-auto" role="group" aria-label="{% trans 'Zoom' %}">
+              <button type="button" class="btn btn-outline-secondary" id="plan-drawing-zoom-out" title="{% trans 'Zoom out' %}"><i class="mdi mdi-magnify-minus-outline"></i></button>
+              <button type="button" class="btn btn-outline-secondary" id="plan-drawing-zoom-fit" title="{% trans 'Fit' %}"><i class="mdi mdi-fit-to-screen-outline"></i></button>
+              <button type="button" class="btn btn-outline-secondary" id="plan-drawing-zoom-in" title="{% trans 'Zoom in' %}"><i class="mdi mdi-magnify-plus-outline"></i></button>
+            </div>
+          </div>
+        {% endif %}
+        <div id="plan-drawing-viewer" class="plan-drawing-viewer">
+          {% if not object.content %}
+            <p class="text-muted p-3 mb-0">
+              {% trans "This drawing is empty." %}
+              {% if perms.netbox_plugin_plan_drawing.change_plandrawing %}
+                <a href="{% url 'plugins:netbox_plugin_plan_drawing:plandrawing_draw' pk=object.pk %}">{% trans "Start drawing" %}</a>
+              {% endif %}
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col col-12 col-xl-3">
+      <div class="card plan-drawing-elements-card">
+        <h2 class="card-header">
+          {% trans "Linked Elements" %}
+          <span id="plan-drawing-elements-count" class="badge text-bg-secondary ms-1">{{ elements|length }}</span>
+        </h2>
+        <div class="card-body pb-2">
+          <input type="search" id="plan-drawing-search" class="form-control" placeholder="{% trans 'Search objects' %}" aria-label="{% trans 'Search objects' %}">
+          <div id="plan-drawing-page-filter" class="btn-group btn-group-sm w-100 mt-2" role="group" aria-label="{% trans 'Pages' %}" hidden>
+            <input type="radio" class="btn-check" name="plan-drawing-page-filter" id="plan-drawing-filter-page" value="page" autocomplete="off" checked>
+            <label class="btn btn-outline-secondary" for="plan-drawing-filter-page">{% trans "This page" %}</label>
+            <input type="radio" class="btn-check" name="plan-drawing-page-filter" id="plan-drawing-filter-all" value="all" autocomplete="off">
+            <label class="btn btn-outline-secondary" for="plan-drawing-filter-all">{% trans "All pages" %}</label>
+          </div>
+        </div>
+        <div id="plan-drawing-elements" class="list-group list-group-flush plan-drawing-elements">
+          {% for element in elements %}
+            <div class="list-group-item list-group-item-action plan-drawing-element" data-index="{{ forloop.counter0 }}" tabindex="0">
+              <div class="d-flex justify-content-between">
+                <span class="fw-semibold">
+                  {% if element.display %}
+                    <a href="{{ element.url }}">{{ element.display }}</a>
+                  {% else %}
+                    <span class="text-muted">{{ element.object_type }}:{{ element.object_id }} ({% trans "unavailable" %})</span>
+                  {% endif %}
+                </span>
+                {% if element.page_name %}<small class="text-muted plan-drawing-element-page">{{ element.page_name }}</small>{% endif %}
+              </div>
+              <small class="text-muted">
+                {{ element.object_type_label }}{% if element.label and element.label != element.display %} &middot; {{ element.label }}{% endif %}
+              </small>
+            </div>
+          {% empty %}
+            <div class="list-group-item text-muted">{% trans "No drawing elements are linked to NetBox objects." %}</div>
+          {% endfor %}
+          <div id="plan-drawing-elements-none" class="list-group-item text-muted" hidden></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col col-12 col-md-6">
+      <div class="card">
+        <h2 class="card-header">{% trans "Plan Drawing" %}</h2>
+        <table class="table table-hover attr-table">
+          <tr>
+            <th scope="row">{% trans "Name" %}</th>
+            <td>{{ object.name }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Site" %}</th>
+            <td>{{ object.site|linkify|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Location" %}</th>
+            <td>{{ object.location|linkify|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Description" %}</th>
+            <td>{{ object.description|placeholder }}</td>
+          </tr>
+          <tr>
+            <th scope="row">{% trans "Owner" %}</th>
+            <td>{{ object.owner|linkify|placeholder }}</td>
+          </tr>
+        </table>
+      </div>
+      {% include 'inc/panels/tags.html' %}
+    </div>
+    <div class="col col-12 col-md-6">
+      {% include 'inc/panels/comments.html' %}
+      {% include 'inc/panels/custom_fields.html' %}
+    </div>
+  </div>
+
+  {{ elements|json_script:"plan-drawing-elements-data" }}
+  {{ object.content|json_script:"plan-drawing-content" }}
+  {{ highlight|json_script:"plan-drawing-highlight" }}
+  <script src="{% versioned_static 'netbox_plugin_plan_drawing/viewer.js' %}"
+          data-drawio-base="{% static 'netbox_plugin_plan_drawing/drawio/' %}"
+          data-drawio-viewer="{{ drawio_viewer_url }}"></script>
+{% endblock %}

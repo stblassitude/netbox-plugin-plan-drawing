@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Build package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache draw.io download
+        uses: actions/cache@v4
+        with:
+          path: .cache/drawio
+          key: drawio-${{ hashFiles('scripts/fetch_drawio.py') }}
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build twine
+
+      # Building the wheel downloads draw.io (see setup.py); keep the download in the cache.
+      - name: Build sdist and wheel
+        run: python -m build
+        env:
+          DRAWIO_CACHE_DIR: ${{ github.workspace }}/.cache/drawio
+
+      - name: Check package metadata
+        run: twine check dist/*
+
+      - name: Check that the wheel contains draw.io
+        run: unzip -l dist/*.whl | grep -q 'static/netbox_plugin_plan_drawing/drawio/index.html'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  test:
+    name: Test in NetBox
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache draw.io download
+        uses: actions/cache@v4
+        with:
+          path: .cache/drawio
+          key: drawio-${{ hashFiles('scripts/fetch_drawio.py') }}
+
+      - name: Start NetBox with the plugin
+        run: docker compose up -d --build --wait netbox
+
+      - name: Run tests
+        run: docker compose exec -T netbox python manage.py test netbox_plugin_plan_drawing --noinput
+
+      - name: Show NetBox logs
+        if: failure()
+        run: docker compose logs netbox

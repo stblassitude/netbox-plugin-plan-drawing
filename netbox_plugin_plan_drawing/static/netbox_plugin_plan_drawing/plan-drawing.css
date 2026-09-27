@@ -1,0 +1,80 @@
+/* The highlight color of selected drawing elements, in the drawing and in the element list;
+   read by viewer.js. */
+:root {
+  --plan-drawing-select-color: #0d6efd;
+}
+
+/* Drawing viewer */
+.plan-drawing-viewer {
+  position: relative;
+  height: 65vh;
+  min-height: 300px;
+  overflow: auto;
+  background: #fff;
+  border-radius: inherit;
+}
+
+.plan-drawing-elements-card {
+  max-height: 75vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.plan-drawing-elements {
+  overflow-y: auto;
+}
+
+.plan-drawing-element {
+  cursor: pointer;
+}
+
+/* Selected elements: a wider bar than NetBox's, in the drawing's highlight color; the padding
+   compensates for the bar, so that the text does not move. */
+.list-group-item.plan-drawing-element.active {
+  border-left: 5px solid var(--plan-drawing-select-color);
+  padding-left: calc(0.75rem - 5px);
+  background-color: color-mix(in srgb, var(--plan-drawing-select-color) 12%, transparent);
+}
+
+/* Listing only the current page's elements: their page names are redundant. */
+.plan-drawing-this-page .plan-drawing-element-page {
+  display: none;
+}
+
+/* Drawing editor */
+.plan-drawing-editor {
+  position: relative;
+  height: calc(100vh - 12rem);
+  min-height: 480px;
+}
+
+.plan-drawing-editor iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.plan-drawing-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 10vh;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.plan-drawing-picker[hidden] {
+  display: none;
+}
+
+.plan-drawing-picker .card {
+  width: min(40rem, calc(100vw - 2rem));
+  max-height: 75vh;
+}
+
+.plan-drawing-picker .list-group {
+  overflow-y: auto;
+  max-height: 45vh;
+}

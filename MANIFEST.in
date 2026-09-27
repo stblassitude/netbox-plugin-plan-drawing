@@ -1,0 +1,4 @@
+include LICENSE README.md
+include scripts/fetch_drawio.py
+graft drawio-overrides
+prune netbox_plugin_plan_drawing/static/netbox_plugin_plan_drawing/drawio

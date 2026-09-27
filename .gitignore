@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.env
+.DS_Store
+.cache/
+# Unpacked by scripts/fetch_drawio.py
+netbox_plugin_plan_drawing/static/netbox_plugin_plan_drawing/drawio/

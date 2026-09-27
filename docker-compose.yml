@@ -1,0 +1,128 @@
+# Runs a local NetBox instance with this plugin installed, for manual testing.
+#
+# Usage:
+#   docker compose up -d --build
+#   open http://localhost:8000/  (login: admin / admin)
+#
+# A demo site with a location, racks, devices, and a floor plan drawing linking them is
+# created automatically on first start (docker/seed_demo_data.py).
+#
+# This is a development/test setup only: it uses fixed, published credentials and is not
+# suitable for production use.
+
+services:
+  netbox: &netbox
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: netbox-plugin-plan-drawing:test
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+    environment: &netbox-env
+      ALLOWED_HOSTS: "*"
+      DB_HOST: postgres
+      DB_NAME: netbox
+      DB_USER: netbox
+      DB_PASSWORD: netbox
+      SECRET_KEY: "0123456789abcdef0123456789abcdef0123456789abcdef01"
+      REDIS_HOST: redis
+      REDIS_PASSWORD: redis
+      REDIS_CACHE_HOST: redis-cache
+      REDIS_CACHE_PASSWORD: redis
+      SKIP_SUPERUSER: "false"
+      SUPERUSER_NAME: admin
+      SUPERUSER_EMAIL: admin@example.com
+      SUPERUSER_PASSWORD: admin
+    ports:
+      - "8000:8080"
+    healthcheck:
+      test: curl -f http://localhost:8080/login/ || exit 1
+      start_period: 240s
+      timeout: 3s
+      interval: 15s
+    volumes:
+      - netbox-media:/opt/netbox/netbox/media:rw
+
+  netbox-worker:
+    <<: *netbox
+    depends_on:
+      netbox:
+        condition: service_healthy
+    environment: *netbox-env
+    ports: []
+    command:
+      - /opt/netbox/venv/bin/python
+      - /opt/netbox/netbox/manage.py
+      - rqworker
+    healthcheck:
+      test: ps -aux | grep -v grep | grep -q rqworker || exit 1
+      start_period: 20s
+      timeout: 3s
+      interval: 15s
+
+  netbox-seed:
+    <<: *netbox
+    depends_on:
+      netbox:
+        condition: service_healthy
+    environment: *netbox-env
+    ports: []
+    healthcheck:
+      disable: true
+    entrypoint: []
+    command:
+      - sh
+      - -c
+      - python manage.py shell --no-startup < /opt/netbox/seed_demo_data.py
+    volumes:
+      - ./docker/seed_demo_data.py:/opt/netbox/seed_demo_data.py:ro
+    restart: "no"
+
+  postgres:
+    image: docker.io/postgres:18-alpine
+    environment:
+      POSTGRES_DB: netbox
+      POSTGRES_USER: netbox
+      POSTGRES_PASSWORD: netbox
+    healthcheck:
+      test: pg_isready -q -t 2 -d $$POSTGRES_DB -U $$POSTGRES_USER
+      start_period: 20s
+      timeout: 30s
+      interval: 10s
+      retries: 5
+    volumes:
+      - netbox-postgres-data:/var/lib/postgresql
+
+  redis:
+    image: docker.io/valkey/valkey:9.1-alpine
+    command: sh -c 'valkey-server --appendonly yes --requirepass "$$REDIS_PASSWORD"'
+    environment:
+      REDIS_PASSWORD: redis
+    healthcheck: &redis-healthcheck
+      test: '[ $$(valkey-cli --pass "$${REDIS_PASSWORD}" ping) = ''PONG'' ]'
+      start_period: 5s
+      timeout: 3s
+      interval: 1s
+      retries: 5
+    volumes:
+      - netbox-redis-data:/data
+
+  redis-cache:
+    image: docker.io/valkey/valkey:9.1-alpine
+    command: sh -c 'valkey-server --requirepass "$$REDIS_PASSWORD"'
+    environment:
+      REDIS_PASSWORD: redis
+    healthcheck: *redis-healthcheck
+    volumes:
+      - netbox-redis-cache-data:/data
+
+volumes:
+  netbox-media:
+  netbox-postgres-data:
+  netbox-redis-data:
+  netbox-redis-cache-data:

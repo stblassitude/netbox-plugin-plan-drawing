@@ -1,0 +1,81 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set package version from tag
+        run: |
+          python - <<'PY'
+          import os
+          import re
+
+          version = os.environ["GITHUB_REF_NAME"].removeprefix("v")
+          path = "pyproject.toml"
+          text = open(path).read()
+          text, n = re.subn(r'(?m)^version = ".*"$', f'version = "{version}"', text, count=1)
+          assert n == 1, "version field not found in pyproject.toml"
+          open(path, "w").write(text)
+          print(f"Set pyproject.toml version to {version}")
+          PY
+
+      - name: Cache draw.io download
+        uses: actions/cache@v4
+        with:
+          path: .cache/drawio
+          key: drawio-${{ hashFiles('scripts/fetch_drawio.py') }}
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build twine
+
+      # Building the wheel downloads draw.io (see setup.py); keep the download in the cache.
+      - name: Build sdist and wheel
+        run: python -m build
+        env:
+          DRAWIO_CACHE_DIR: ${{ github.workspace }}/.cache/drawio
+
+      - name: Check package metadata
+        run: twine check dist/*
+
+      - name: Check that the wheel contains draw.io
+        run: unzip -l dist/*.whl | grep -q 'static/netbox_plugin_plan_drawing/drawio/index.html'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/netbox-plugin-plan-drawing
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      # Uses PyPI Trusted Publishing (OIDC) -- no API token required. Before the first
+      # release, register this repo as a *pending* publisher (the project doesn't exist on
+      # PyPI yet) at https://pypi.org/manage/account/publishing/ with:
+      #   PyPI project name: netbox-plugin-plan-drawing
+      #   Owner: stblassitude   Repository: netbox-plugin-plan-drawing
+      #   Workflow name: publish.yml   Environment name: pypi
+      - uses: pypa/gh-action-pypi-publish@release/v1

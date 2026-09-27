@@ -1,0 +1,70 @@
+{% extends 'generic/object.html' %}
+{% load i18n %}
+{% load static %}
+{% load plan_drawing %}
+
+{% block title %}{% blocktrans %}Editing {{ object }}{% endblocktrans %}{% endblock %}
+
+{% block head %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% versioned_static 'netbox_plugin_plan_drawing/plan-drawing.css' %}">
+{% endblock %}
+
+{% block controls %}
+  <div class="btn-list justify-content-end mb-2">
+    <span id="plan-drawing-status" class="align-self-center text-muted me-2" role="status"></span>
+    <a href="{{ object.get_absolute_url }}" class="btn btn-outline-secondary">
+      <i class="mdi mdi-arrow-left"></i> {% trans "Back to Drawing" %}
+    </a>
+  </div>
+{% endblock controls %}
+
+{% block tabs %}{% endblock %}
+
+{% block content %}
+  <div class="card mb-2">
+    <div class="card-body py-2 d-flex flex-wrap align-items-center gap-2">
+      <span class="text-muted">{% trans "Selected element" %}:</span>
+      <span id="plan-drawing-selection" class="text-muted">{% trans "none" %}</span>
+      <span class="ms-auto btn-list">
+        <button type="button" id="plan-drawing-link" class="btn btn-sm btn-primary" disabled>
+          <i class="mdi mdi-link-variant"></i> {% trans "Link to NetBox Object" %}
+        </button>
+        <button type="button" id="plan-drawing-unlink" class="btn btn-sm btn-outline-danger" disabled>
+          <i class="mdi mdi-link-variant-off"></i> {% trans "Remove Link" %}
+        </button>
+      </span>
+    </div>
+  </div>
+
+  <div class="card plan-drawing-editor">
+    <iframe id="plan-drawing-frame" title="{% trans 'draw.io editor' %}"
+            data-src="{{ drawio_url }}?embed=1&amp;proto=json&amp;spin=1&amp;configure=1&amp;stealth=1&amp;saveAndExit=1&amp;noExitBtn=0&amp;p=netbox&amp;nbv={{ drawio_plugin_version }}"></iframe>
+  </div>
+
+  <div id="plan-drawing-picker" class="plan-drawing-picker" hidden>
+    <div class="card" role="dialog" aria-modal="true" aria-labelledby="plan-drawing-picker-title">
+      <h2 class="card-header" id="plan-drawing-picker-title">{% trans "Link to NetBox Object" %}</h2>
+      <div class="card-body">
+        <div class="row g-2 mb-2">
+          <div class="col-12 col-md-5">
+            <label for="plan-drawing-picker-type" class="form-label">{% trans "Object type" %}</label>
+            <select id="plan-drawing-picker-type" class="form-select no-ts"></select>
+          </div>
+          <div class="col-12 col-md-7">
+            <label for="plan-drawing-picker-search" class="form-label">{% trans "Search" %}</label>
+            <input type="search" id="plan-drawing-picker-search" class="form-control" autocomplete="off">
+          </div>
+        </div>
+        <div id="plan-drawing-picker-current" class="small text-muted mb-2"></div>
+        <div id="plan-drawing-picker-results" class="list-group"></div>
+      </div>
+      <div class="card-footer d-flex justify-content-end gap-2">
+        <button type="button" id="plan-drawing-picker-cancel" class="btn btn-outline-secondary">{% trans "Cancel" %}</button>
+      </div>
+    </div>
+  </div>
+
+  {{ editor_config|json_script:"plan-drawing-editor-config" }}
+  <script src="{% versioned_static 'netbox_plugin_plan_drawing/editor.js' %}"></script>
+{% endblock %}

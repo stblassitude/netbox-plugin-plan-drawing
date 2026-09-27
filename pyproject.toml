@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netbox-plugin-plan-drawing"
+version = "0.1.0"
+authors = [
+    { name = "Stefan Bethke", email = "stb@lassitu.de" },
+]
+description = "NetBox plugin for plan drawings (floor plans etc.) with draw.io, linking drawing elements to NetBox objects"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.12"
+dependencies = [
+    "defusedxml>=0.7",
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: Django",
+    "Intended Audience :: System Administrators",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+
+[project.urls]
+Homepage = "https://github.com/stblassitude/netbox-plugin-plan-drawing"
+Issues = "https://github.com/stblassitude/netbox-plugin-plan-drawing/issues"
+
+[tool.setuptools.packages.find]
+include = ["netbox_plugin_plan_drawing*"]
+
+[tool.setuptools.package-data]
+netbox_plugin_plan_drawing = ["templates/**/*.html", "static/**/*"]
