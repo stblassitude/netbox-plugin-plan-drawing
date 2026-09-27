@@ -29,6 +29,7 @@ classifiers = [
 
 [project.urls]
 Homepage = "https://github.com/stblassitude/netbox-plugin-plan-drawing"
+Documentation = "https://stblassitude.github.io/netbox-plugin-plan-drawing/"
 Issues = "https://github.com/stblassitude/netbox-plugin-plan-drawing/issues"
 
 [tool.setuptools.packages.find]

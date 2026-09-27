@@ -126,13 +126,14 @@ drawing, created = PlanDrawing.objects.get_or_create(
 
 if created:
     # Save through a simulated request, so that the saves are recorded in the change log, as
-    # they are when edited in the UI. The first save adds the content; the others change it
-    # slightly, to give plan_drawing_changelog_stats something to report.
+    # they are when edited in the UI. The first saves add slightly different versions of the
+    # content, to give plan_drawing_changelog_stats something to report; the last one the final
+    # content.
     request = RequestFactory().get('/')
     request.id = uuid.uuid4()
     request.user = User.objects.filter(is_superuser=True).first()
     with event_tracking(request):
-        for revision in range(3):
+        for revision in (1, 2, 0):
             drawing.snapshot()
             drawing.content = content.replace('value="Desk"', f'value="Desk {revision}"') if revision else content
             drawing.full_clean()

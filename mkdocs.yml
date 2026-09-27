@@ -1,0 +1,48 @@
+site_name: NetBox Plan Drawing Plugin
+site_description: Plan drawings, like floor plans, in NetBox, with drawing elements linked to NetBox objects
+site_url: https://stblassitude.github.io/netbox-plugin-plan-drawing/
+repo_url: https://github.com/stblassitude/netbox-plugin-plan-drawing
+repo_name: stblassitude/netbox-plugin-plan-drawing
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - content.code.copy
+    - navigation.footer
+    - navigation.instant
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Overview: index.md
+  - Installation: installation.md
+  - REST API: rest-api.md
+  - Development: development.md
+  - Implementation Notes: implementation.md

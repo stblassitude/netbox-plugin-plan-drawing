@@ -11,3 +11,4 @@ venv/
 .cache/
 # Unpacked by scripts/fetch_drawio.py
 netbox_plugin_plan_drawing/static/netbox_plugin_plan_drawing/drawio/
+site/

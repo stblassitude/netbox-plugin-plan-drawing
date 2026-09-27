@@ -87,10 +87,19 @@
   }
 
   PlanDrawingViewer.prototype.fit = function () {
-    this.graph.maxFitScale = 2;
-    this.graph.fit(BORDER);
-    this.graph.maxFitScale = null;
-    this.graph.center(true, true);
+    const graph = this.graph;
+    graph.maxFitScale = 2;
+    graph.fit(BORDER);
+    graph.maxFitScale = null;
+
+    // Center the drawing in the free space. (graph.center() only scrolls a container that has
+    // scrollbars, and does not move the drawing when it fits.)
+    const bounds = graph.getGraphBounds();
+    const scale = graph.view.scale;
+    const translate = graph.view.translate;
+    const dx = Math.max(0, (this.container.clientWidth - bounds.width) / 2 - bounds.x);
+    const dy = Math.max(0, (this.container.clientHeight - bounds.height) / 2 - bounds.y);
+    graph.view.setTranslate(translate.x + dx / scale, translate.y + dy / scale);
   };
 
   PlanDrawingViewer.prototype.installToolbar = function () {
