@@ -42,7 +42,7 @@ services:
       - "8000:8080"
     healthcheck:
       test: curl -f http://localhost:8080/login/ || exit 1
-      start_period: 240s
+      start_period: 600s
       timeout: 3s
       interval: 15s
     volumes:
