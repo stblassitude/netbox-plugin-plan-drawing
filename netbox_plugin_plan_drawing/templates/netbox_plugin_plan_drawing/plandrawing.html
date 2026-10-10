@@ -77,6 +77,15 @@
               <small class="text-muted">
                 {{ element.object_type_label }}{% if element.label and element.label != element.display %} &middot; {{ element.label }}{% endif %}
               </small>
+              {% if element.contents is not None %}
+                <div class="small mt-1 plan-drawing-element-contents">
+                  {% if element.contents %}
+                    {% include 'netbox_plugin_plan_drawing/inc/element_contents.html' with nodes=element.contents %}
+                  {% else %}
+                    <span class="text-muted">{% trans "No objects in it." %}</span>
+                  {% endif %}
+                </div>
+              {% endif %}
             </div>
           {% empty %}
             <div class="list-group-item text-muted">{% trans "No drawing elements are linked to NetBox objects." %}</div>

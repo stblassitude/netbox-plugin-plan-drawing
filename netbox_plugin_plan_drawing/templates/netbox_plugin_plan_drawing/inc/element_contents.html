@@ -1,0 +1,21 @@
+{% load i18n %}
+<ul class="list-unstyled mb-0 plan-drawing-contents">
+  {% for node in nodes %}
+    <li>
+      {% if node.linked %}
+        <div class="d-flex justify-content-between gap-2 plan-drawing-node plan-drawing-node-linked" data-object-type="{{ node.object_type }}" data-object-id="{{ node.object_id }}" tabindex="0" title="{% trans 'Show in the drawing' %}">
+      {% else %}
+        <div class="d-flex justify-content-between gap-2 plan-drawing-node">
+      {% endif %}
+        <span>
+          <a href="{{ node.url }}">{{ node.display }}</a>
+          {% if node.linked %}<i class="mdi mdi-link-variant text-muted"></i>{% endif %}
+        </span>
+        <span class="text-muted text-nowrap">{{ node.object_type_label }}{% if node.position is not None %} &middot; U{{ node.position|floatformat:"-1" }}{% endif %}</span>
+      </div>
+      {% if node.children %}
+        {% include 'netbox_plugin_plan_drawing/inc/element_contents.html' with nodes=node.children %}
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>

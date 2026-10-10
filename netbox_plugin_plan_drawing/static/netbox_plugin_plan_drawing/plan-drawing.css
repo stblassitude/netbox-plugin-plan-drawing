@@ -36,6 +36,37 @@
   background-color: color-mix(in srgb, var(--plan-drawing-select-color) 12%, transparent);
 }
 
+/* The objects in a location or rack are only listed while it is selected, or while one of the
+   objects in it is selected from the list. */
+.plan-drawing-element:not(.active, .plan-drawing-expanded) .plan-drawing-element-contents {
+  display: none;
+}
+
+.plan-drawing-contents {
+  padding-left: 0.75rem;
+  border-left: 1px solid var(--bs-border-color);
+}
+
+.plan-drawing-node {
+  padding: 0 0.25rem;
+  cursor: default;
+  border-radius: var(--bs-border-radius-sm);
+}
+
+/* Objects in a location or rack that are linked in the drawing as well: clicking them selects
+   their elements. */
+.plan-drawing-node-linked {
+  cursor: pointer;
+}
+
+.plan-drawing-node-linked:hover {
+  background-color: var(--bs-tertiary-bg);
+}
+
+.plan-drawing-node.active {
+  background-color: color-mix(in srgb, var(--plan-drawing-select-color) 20%, transparent);
+}
+
 /* Listing only the current page's elements: their page names are redundant. */
 .plan-drawing-this-page .plan-drawing-element-page {
   display: none;

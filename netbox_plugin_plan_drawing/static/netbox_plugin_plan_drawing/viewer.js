@@ -3,7 +3,8 @@
  * the list of elements linked to NetBox objects: clicking either one highlights the other,
  * searching the list highlights all matching elements, and ?highlight=<type>:<id> in the page
  * URL highlights the elements of that object when the page opens. The list shows the elements
- * of the current page, or of all pages.
+ * of the current page, or of all pages. A selected location or rack lists the objects in it;
+ * clicking those that are linked in the drawing as well selects their elements.
  */
 (function () {
   'use strict';
@@ -52,8 +53,9 @@
     this.container = container;
     this.elements = elements;
     this.rows = Array.from(document.querySelectorAll('.plan-drawing-element'));
+    this.nodes = Array.from(document.querySelectorAll('.plan-drawing-node-linked'));
     this.highlights = [];
-    this.hoverHighlight = null;
+    this.hoverHighlights = [];
     this.selected = [];
     this.matches = [];
     this.searchTerms = [];
@@ -245,13 +247,13 @@
     this.rows.forEach(function (row) {
       const index = parseInt(row.dataset.index, 10);
       row.addEventListener('click', function (evt) {
-        if (evt.target.closest('a')) {
+        if (evt.target.closest('a, .plan-drawing-element-contents')) {
           return;
         }
         self.select([index], { switchPage: true, scrollDrawing: true });
       });
       row.addEventListener('keydown', function (evt) {
-        if (evt.key === 'Enter' || evt.key === ' ') {
+        if (evt.target === row && (evt.key === 'Enter' || evt.key === ' ')) {
           evt.preventDefault();
           self.select([index], { switchPage: true, scrollDrawing: true });
         }
@@ -261,6 +263,40 @@
       });
       row.addEventListener('mouseleave', function () {
         self.hover(null);
+      });
+    });
+
+    // The objects in a location or rack that are linked in the drawing as well select their
+    // elements, and keep the location or rack expanded.
+    this.nodes.forEach(function (node) {
+      const type = node.dataset.objectType;
+      const id = parseInt(node.dataset.objectId, 10);
+      const row = parseInt(node.closest('.plan-drawing-element').dataset.index, 10);
+      node.indices = [];
+      self.elements.forEach(function (element, index) {
+        if (element.object_type === type && element.object_id === id) {
+          node.indices.push(index);
+        }
+      });
+      const select = function () {
+        self.select(node.indices, { switchPage: true, scrollDrawing: true, expand: row });
+      };
+      node.addEventListener('click', function (evt) {
+        if (!evt.target.closest('a')) {
+          select();
+        }
+      });
+      node.addEventListener('keydown', function (evt) {
+        if (evt.target === node && (evt.key === 'Enter' || evt.key === ' ')) {
+          evt.preventDefault();
+          select();
+        }
+      });
+      node.addEventListener('mouseenter', function () {
+        self.hover(node.indices);
+      });
+      node.addEventListener('mouseleave', function () {
+        self.hover(row);
       });
     });
 
@@ -332,7 +368,14 @@
     this.refreshHighlights();
 
     this.rows.forEach(function (row) {
-      row.classList.toggle('active', indices.indexOf(parseInt(row.dataset.index, 10)) >= 0);
+      const index = parseInt(row.dataset.index, 10);
+      row.classList.toggle('active', indices.indexOf(index) >= 0);
+      row.classList.toggle('plan-drawing-expanded', index === options.expand);
+    });
+    this.nodes.forEach(function (node) {
+      node.classList.toggle('active', node.indices.some(function (index) {
+        return indices.indexOf(index) >= 0;
+      }));
     });
 
     if (options.scrollList && indices.length > 0) {
@@ -350,17 +393,20 @@
     }
   };
 
-  PlanDrawingViewer.prototype.hover = function (index) {
-    if (this.hoverHighlight) {
-      this.hoverHighlight.destroy();
-      this.hoverHighlight = null;
-    }
-    if (index != null) {
-      const cell = this.cellForElement(index);
-      if (cell) {
-        this.hoverHighlight = this.addHighlight(cell, HOVER_COLOR, 3);
+  /** Highlights the elements with the given index or indices on the current page. */
+  PlanDrawingViewer.prototype.hover = function (indices) {
+    const self = this;
+    this.hoverHighlights.forEach(function (highlight) {
+      highlight.destroy();
+    });
+    this.hoverHighlights = [];
+    [].concat(indices == null ? [] : indices).forEach(function (index) {
+      const cell = self.cellForElement(index);
+      const highlight = cell && self.addHighlight(cell, HOVER_COLOR, 3);
+      if (highlight) {
+        self.hoverHighlights.push(highlight);
       }
-    }
+    });
   };
 
   PlanDrawingViewer.prototype.matchesSearch = function (element) {

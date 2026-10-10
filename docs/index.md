@@ -11,6 +11,7 @@ The drawing page shows the drawing next to the list of **Linked Elements**: the 
 ![The drawing viewer, with the access point ap1 highlighted](images/viewer.png)
 
 * Clicking an element in the drawing selects it in the list; clicking an entry in the list highlights the element in the drawing. Hovering over an entry highlights its element as well. The names in the list link to the NetBox objects.
+* A selected **location** or **rack** shows the objects in it as a tree: a location contains its child locations, racks, devices not mounted in a rack, and power panels; a rack contains its devices, top to bottom; and a device contains the devices in its device bays. The names link to the objects. Objects that are linked in the drawing as well are marked with a link icon; clicking them highlights their elements in the drawing.
 * Drawings can have several **pages**, e.g. one per room or floor. The list shows the elements of the page shown (**This page**), or of **All pages**.
 * The **search** box filters the list by object name, element label, or object type, and highlights all matching elements in the drawing:
 

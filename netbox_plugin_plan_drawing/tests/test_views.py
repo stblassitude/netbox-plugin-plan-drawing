@@ -43,6 +43,30 @@ class PlanDrawingViewsTestCase(TestCase):
         self.assertEqual(response.context['elements'][0]['display'], str(self.rack))
         self.assertEqual(response.context['elements'][0]['url'], self.rack.get_absolute_url())
 
+    def test_detail_lists_location_and_rack_contents(self):
+        self.drawing.content = self.content(
+            linked_cell('b', 'Room', 'dcim.location', self.location.pk),
+            linked_cell('c', 'Device', 'dcim.device', self.device.pk),
+        )
+        self.drawing.save()
+
+        response = self.client.get(self.drawing.get_absolute_url())
+
+        contents = {e['object_type']: e['contents'] for e in response.context['elements']}
+        self.assertIsNone(contents['dcim.device'])
+        [rack] = contents['dcim.location']
+        self.assertEqual((rack['display'], rack['url'], rack['linked']), (str(self.rack), self.rack.get_absolute_url(), False))
+        [device] = rack['children']
+        self.assertEqual((device['object_type'], device['object_id'], device['linked']), ('dcim.device', self.device.pk, True))
+        self.assertContains(response, f'data-object-type="dcim.device" data-object-id="{self.device.pk}"')
+
+    def test_detail_lists_rack_contents(self):
+        response = self.client.get(self.drawing.get_absolute_url())
+
+        [device] = response.context['elements'][0]['contents']
+        self.assertEqual((device['display'], device['linked']), (str(self.device), False))
+        self.assertContains(response, f'href="{self.device.get_absolute_url()}"')
+
     def test_detail_lists_elements_in_page_order(self):
         self.drawing.content = drawing_file(
             ('z', 'Zeta', graph_model(linked_cell('a', 'Rack', 'dcim.rack', self.rack.pk))),

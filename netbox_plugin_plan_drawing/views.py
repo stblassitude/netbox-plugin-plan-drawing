@@ -3,13 +3,16 @@ from collections import defaultdict
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import F, Q
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.templatetags.static import static
+from django.utils.text import capfirst
 from django.shortcuts import get_object_or_404
 from django.urls import NoReverseMatch, reverse
 from django.views import View
 
+from dcim.models import Device, Location, PowerPanel, Rack
 from netbox.views import generic
 from utilities.permissions import get_permission_for_model
 from utilities.query import count_related
@@ -26,11 +29,82 @@ from .tables import PlanDrawingTable
 DRAWIO_INDEX = 'netbox_plugin_plan_drawing/drawio/index.html'
 
 
+def location_and_rack_contents(objects, user):
+    """
+    Return the trees of objects in the given locations and racks, keyed by (model, pk) of the
+    location or rack. A location contains its child locations, racks, devices not mounted in a
+    rack, and power panels; a rack contains its devices, top to bottom; and a device contains the
+    devices installed in its device bays. Objects in the given list are marked as linked. Objects
+    the user may not view are left out.
+    """
+    linked = {(type(obj), obj.pk) for obj in objects}
+    location_ids = set()
+    for obj in objects:
+        if isinstance(obj, Location):
+            location_ids.update(obj.get_descendants(include_self=True).values_list('pk', flat=True))
+    linked_rack_ids = [obj.pk for obj in objects if isinstance(obj, Rack)]
+    if not location_ids and not linked_rack_ids:
+        return {}
+
+    locations = Location.objects.restrict(user, 'view').filter(pk__in=location_ids)
+    racks = list(Rack.objects.restrict(user, 'view').filter(Q(location__in=location_ids) | Q(pk__in=linked_rack_ids)))
+    devices = Device.objects.restrict(user, 'view').filter(
+        Q(rack__in=[rack.pk for rack in racks]) | Q(location__in=location_ids, rack__isnull=True),
+    ).select_related('parent_bay').order_by(F('position').desc(nulls_last=True), 'name')
+    panels = PowerPanel.objects.restrict(user, 'view').filter(location__in=location_ids)
+
+    nodes = {}
+
+    def add(obj, *parents, position=None):
+        """
+        Add the object below the first of the parents, given as (model, pk), that is in the tree.
+        """
+        node = nodes[(type(obj), obj.pk)] = {
+            'display': str(obj),
+            'url': obj.get_absolute_url(),
+            'object_type': f'{obj._meta.app_label}.{obj._meta.model_name}',
+            'object_id': obj.pk,
+            'object_type_label': capfirst(obj._meta.verbose_name),
+            'position': position,
+            'linked': (type(obj), obj.pk) in linked,
+            'children': [],
+        }
+        for parent in parents:
+            if parent in nodes:
+                nodes[parent]['children'].append(node)
+                break
+
+    # Locations are ordered by their path, so that parents are added before their children.
+    for location in locations:
+        add(location, (Location, location.parent_id))
+    for rack in racks:
+        add(rack, (Location, rack.location_id))
+    # Devices in device bays go below their parent device, once it has been added; devices whose
+    # parent is not in the tree go below their rack or location.
+    pending = list(devices)
+    while pending:
+        remaining = []
+        pending_ids = {device.pk for device in pending}
+        for device in pending:
+            parent_bay = getattr(device, 'parent_bay', None)
+            parent = (Device, parent_bay.device_id) if parent_bay else None
+            if parent and parent not in nodes and parent_bay.device_id in pending_ids:
+                remaining.append(device)
+                continue
+            add(device, parent, (Rack, device.rack_id), (Location, device.location_id), position=device.position)
+        if len(remaining) == len(pending):
+            break
+        pending = remaining
+    for panel in panels:
+        add(panel, (Location, panel.location_id))
+    return nodes
+
+
 def linked_elements(drawing, user):
     """
     Return the drawing's linked elements, with the NetBox objects they are linked to, for the
     drawing viewer, in the order of the drawing's pages. Objects the user may not view are shown
-    without their name.
+    without their name. Locations and racks come with the objects in them.
     """
     elements = list(drawing.elements.select_related('assigned_object_type'))
 
@@ -44,6 +118,7 @@ def linked_elements(drawing, user):
             continue
         for obj in model.objects.restrict(user, 'view').filter(pk__in=ids):
             objects[(content_type.pk, obj.pk)] = obj
+    contents = location_and_rack_contents(list(objects.values()), user)
 
     result = []
     for element in elements:
@@ -60,6 +135,7 @@ def linked_elements(drawing, user):
             'object_id': element.assigned_object_id,
             'display': str(obj) if obj else None,
             'url': obj.get_absolute_url() if obj else None,
+            'contents': contents[(model, obj.pk)]['children'] if isinstance(obj, (Location, Rack)) else None,
         })
 
     try:
