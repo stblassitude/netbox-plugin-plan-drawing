@@ -4,7 +4,7 @@
 
 | NetBox Version | Plugin Version |
 |----------------|----------------|
-| 4.7 - 4.99     | 1.0.0          |
+| 4.7 - 4.99     | 1.x            |
 
 ## Installing the plugin
 

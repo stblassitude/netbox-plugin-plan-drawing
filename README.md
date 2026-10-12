@@ -2,7 +2,7 @@
 
 This plugin provides the ability to add plan drawings, like floor plans, to Netbox, and place objects like devices, racks, or locations on those plans.
 
-The plugin embeds draw.io to create and update the drawings. Each object in the drawing can be associated with a Netbox object. A draw.io plugin implements the necessary GUI to select the Netbox object to attach to a draw.io object in the drawing.
+The plugin embeds [draw.io](https://github.com/jgraph/drawio) to create and update the drawings. Each object in the drawing can be associated with a Netbox object. A draw.io plugin implements the necessary GUI to select the Netbox object to attach to a draw.io object in the drawing.
 
 Besides a list of drawings and the ability to edit them with draw.io, a drawing viewer shows a drawing and the Netbox objects associated with the drawing objects in that file. A search allows to highlight elements based on their Netbox objects. Netbox object pages are extended with links to the drawing viewer, so a single click takes you from an object to the drawing it is in, and hightlights the element for that objects.
 
@@ -21,7 +21,7 @@ draw.io is included in the plugin and served by NetBox itself: there is no separ
 
 | NetBox Version | Plugin Version |
 |-----------------|----------------|
-| 4.7 - 4.99      | 1.0.0          |
+| 4.7 - 4.99      | 1.x            |
 
 ## Installation
 
