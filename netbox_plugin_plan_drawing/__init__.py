@@ -1,3 +1,5 @@
+from importlib.metadata import version as package_version
+
 from netbox.plugins import PluginConfig
 
 
@@ -5,7 +7,7 @@ class PlanDrawingConfig(PluginConfig):
     name = 'netbox_plugin_plan_drawing'
     verbose_name = 'Plan Drawings'
     description = 'Plan drawings (floor plans etc.) edited with draw.io, with elements linked to NetBox objects'
-    version = '1.1.0'
+    version = package_version('netbox-plugin-plan-drawing')
     author = 'Stefan Bethke'
     author_email = 'stb@lassitu.de'
     base_url = 'plan-drawing'
